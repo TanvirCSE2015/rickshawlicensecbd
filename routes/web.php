@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApplicantController;
 use App\Http\Controllers\PrintReportController;
 use App\Http\Controllers\ReceiptController;
+use App\Http\Controllers\JanataPayController;
 
 Route::get('/', [ApplicantController::class, 'create'])->name('home');
 Route::post('/apply', [ApplicantController::class, 'store'])->name('applicant.store');
@@ -36,4 +37,9 @@ Route::get('/lottery-token/print', [PrintReportController::class, 'PrintLotteryT
 Route::get('/tokens', function(){
     return view('receipt.tokens_print');
 });
+
+Route::get(
+    '/payments/janatapay/callback',
+    [JanataPayController::class, 'callback']
+)->name('janatapay.callback');
 

@@ -14,6 +14,9 @@ use BaconQrCode\Renderer\ImageRenderer;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use App\Services\JanataPayService;
+use Throwable;
+use Illuminate\Support\Facades\Log;
 
 class ApplicantController extends Controller
 {
@@ -182,6 +185,34 @@ class ApplicantController extends Controller
         }
 
         $applicant = Applicant::create($validated);
+
+        // Get the application fee from server-side configuration.
+        $applicationFee = 200;
+
+        try {
+            // Initiate JanataPay payment.
+            $paymentUrl = app(JanataPayService::class)->startPayment(
+                applicantId: $applicant->id,
+                paymentType: 'application_fee',
+                amount: $applicationFee,
+                createdBy: null
+            );
+
+            // Redirect applicant to JanataPay.
+            return redirect()->away($paymentUrl);
+
+        } catch (Throwable $e) {
+
+            // The applicant has already been saved.
+            // Do not create the applicant again if payment initiation fails.
+            Log::error('JanataPay payment initiation failed', [
+                'applicant_id' => $applicant->id,
+                'error' => $e->getMessage(),
+            ]);
+            return redirect()->back()
+            ->with('error', 'আপনার আবেদন সংরক্ষণ হয়েছে, কিন্তু পেমেন্ট শুরু করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।')
+            ->with('applicant_id', $applicant->id);
+        }
 
         return redirect()->back()->with('success', 'আপনার আবেদন সফলভাবে জমা হয়েছে!')->with('nid', $applicant->nid_no)
         ->with('phone', $applicant->phone)

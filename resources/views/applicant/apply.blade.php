@@ -63,15 +63,16 @@
         @if(\Carbon\Carbon::parse($app_setting->app_expire_date)->greaterThanOrEqualTo(today()))
         <button id="showFormBtn" class="btn btn-primary btn-lg">আবেদন করুন</button>
         @endif
-        <!-- @if($errors->any())
-            <div class="alert alert-danger">
-                <ul>
-                    @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif -->
+        @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>পেমেন্ট সমস্যা!</strong>
+            {{ session('error') }}
+
+            <button type="button" class="btn-close"
+                    data-bs-dismiss="alert" aria-label="Close">
+            </button>
+        </div>
+        @endif
     </div>
     <div class="card shadow border-0 rounded-4 mb-5" style="background: white;{{ $errors->any() ? '' : 'display:none;' }}" id="applicantFormCard">
         <div class="card-body">
