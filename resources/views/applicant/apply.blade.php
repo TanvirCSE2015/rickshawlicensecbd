@@ -1,644 +1,367 @@
-@extends('layouts.frontend')
-@section('main_content')
-    @include('applicant.success_modal')
-    <!-- load a Bengali-capable webfont (optional but recommended) -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif&display=swap" rel="stylesheet">
+@extends('layouts.app')
 
-    <style>
-        .arc-text {
-            font-family: "Noto Serif", "Noto Sans", sans-serif;
-            font-weight: 700;
-            font-size: 47px;
-            fill: #111;
-            stroke: #111;
-            stroke-width: 0.4;
-            letter-spacing: -4px;
-        }
+@section('title', 'অনলাইন আবেদন ফরম')
 
-        .logo-centered {
-            width: 120px;
-            height: 120px;
-            object-fit: contain;
-            display: block;
-            margin: -150px auto 0;
-            border-radius: 50%;
-            background: transparent;
-        }
-
-        /* container spacing */
-        .arch-wrap {
-            margin-bottom: 10px;
-        }
-    </style>
-
-    <!-- Top Heading -->
-    <h3 class="text-center fw-bold mb-1">
-        ক্যান্টনমেন্ট এক্সিকিউটিভ অফিসারের কার্যালয়
-    </h3>
-    <h5 class="text-center fw-bold mb-2">
-        ঢাকা ক্যান্টনমেন্ট, ঢাকা
-    </h5>
-
-    <section id="application-instructions" style="border:1px solid #e0e0e0;border-radius:8px;padding:16px;margin-bottom:16px;background:#fafafa;">
-        <h3 style="margin-top:0;font-size:1.1rem;">নির্দেশনাসমূহঃ</h3>
-        <ul style="padding-left:1.25rem;line-height:1.5;margin-bottom:12px; color:red;">
-            <li>একজন ব্যক্তি একের অধিক কোটায় আবেদন করতে পারবেন না। আবেদনকারী মনোনীত হলে ১টি লাইসেন্স ইজারা/বরাদ্দ পাবেন।</li>
-            <li>আবেদনের সাথে সিইও, ঢাকা ক্যান্টনমেন্ট এর অনুকূলে লাইসেন্স ফি বাবদ ৭৩০০/- (সাত হাজার তিনশত) টাকার পে-অর্ডারের কপিসহ তথ্য প্রদান করতে হবে। আবেদনকারী মনোনীত হলে পে-অর্ডার জমা প্রদান করতে হবে।</li>
-            <li>রিক্সার লাইসেন্সের জন্য অনুমতিপ্রাপ্ত হলে লাইসেন্স ফি এর উপর ১৫% ভ্যাট ও ১০% উৎসকর প্রদান করতে হবে। এছাড়া প্রতিটি লাইসেন্সের জন্য ৩০০০/- (তিন হাজার) টাকা জমা রাখতে হবে। এর মধ্যে জামানত বাবদ ২০০০/- টাকা লাইসেন্সের মেয়াদ শেষে ফেরতযোগ্য। অবশিষ্ট ১০০০/- টাকা রিক্সা মনিটরিং ফি বাবদ কর্তন করা হবে।</li>
-            <li>রিক্সার লাইসেন্স বিক্রয় করা যাবে না, তবে ভাড়া প্রদান করতে পারবেন। কোনো অনিয়ম পরিলক্ষিত হলে জামানত বাজেয়াপ্ত ও প্রয়োজনীয় আইনানুগ ব্যবস্থা গ্রহণ করা হবে।</li>
-            <li>আবেদনকারী ঢাকা সিটিকর্পোরেশন বা ঢাকা ক্যান্টনমেন্ট বোর্ডের আওতাধীন এলাকায় বসবাসকারী হতে হবে। প্রমানক হিসেবে সংশ্লিষ্ট এলাকার নাগরিক সনদপত্র দাখিল করতে হবে।</li>
-            <li>সকল কোটার আবেদনের ক্ষেত্রে কোটার প্রমানক সংযুক্ত করতে হবে।</li>
-            <li>অনলাইনে আবেদন করার পর আবেদনের প্রিন্ট  কপিসহ ঢাকা ক্যান্টনমেন্ট বোর্ডের রাজস্ব শাখায় ২০০/-টাকা  আবেদন ফি জমা করার জন্য অনুরোধ করা হলো অন্যথায় আপনার আবেদনটি বাতিল বলে গণ্য হবে।</li>
-
-        </ul>
-        <div class="row justify-content-center">
-            <div class="col-md-12">
-                <div class="alert alert-danger text-center  shadow" role="alert" style="background-color: darkred;color: white;">
-                    <strong>আবেদনের শেষ তারিখঃ  {{ bn_number(date('d-m-Y',strtotime($app_setting->app_expire_date))) }} ইং!</strong>
+@section('content')
+            <div class="page-banner">
+                <div class="container">
+                    <h2>অনলাইন আবেদন ফরম</h2>
+                    <p>সকল তারকা (*) চিহ্নিত তথ্য আবশ্যক</p>
                 </div>
             </div>
-        </div>
-    </section>
-    <div class="text-center mb-2" id="showFormBtnContainer">
-        @if(\Carbon\Carbon::parse($app_setting->app_expire_date)->greaterThanOrEqualTo(today()))
-        <button id="showFormBtn" class="btn btn-primary btn-lg">আবেদন করুন</button>
-        @endif
-        @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <strong>পেমেন্ট সমস্যা!</strong>
-            {{ session('error') }}
-
-            <button type="button" class="btn-close"
-                    data-bs-dismiss="alert" aria-label="Close">
-            </button>
-        </div>
-        @endif
-    </div>
-    <div class="card shadow border-0 rounded-4 mb-5" style="background: white;{{ $errors->any() ? '' : 'display:none;' }}" id="applicantFormCard">
-        <div class="card-body">
-            <div class="container mt-5">
-                <form action="{{ route('applicant.store') }}" method="POST" enctype="multipart/form-data">
+            <div class="container py-4 py-md-5">
+                <form id="applyForm" method="POST" action="{{ route('applicant.store') }}" enctype="multipart/form-data"
+                    novalidate>
                     @csrf
-                    <div class="border p-4 rounded shadow-sm mb-2">
-                        <h5 class="fw-bold mb-4">রুট ও ক্যাটাগরি নির্বাচন (Route & Category)</h5>
-                        <div class=" mb-3 align-items-center">
-                            <label class="col-form-label fw-bold">
-                                রুট <span class="text-danger">*</span>
-                            </label>
-                            <div class="ms-5">
-                                @foreach($areas as $area)
-                                <div class="form-check form-check">
-                                    <input 
-                                        type="radio"
-                                        class="form-check-input @error('area_id') is-invalid @enderror"
-                                        name="area_id"
-                                        value="{{ $area->id }}"
-                                        id="area{{ $area->id }}"
-                                        {{ old('area_id') == $area->id ? 'checked' : '' }}
-                                    >
-                                    <label class="form-check-label" for="area{{ $area->id }}">
-                                        {{ $area->area_name }}
-                                    </label>
-                                </div>
+
+                    {{-- Server-side errors / flash messages --}}
+                    @if ($errors->any())
+                        <div class="alert alert-danger" role="alert">
+                            <div class="fw-bold mb-1">আবেদন জমা দেওয়া যায়নি। অনুগ্রহ করে নিচের ভুলগুলো ঠিক করুন:</div>
+                            <ul class="mb-0 ps-3">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
                                 @endforeach
-                                @error('area_id')
-                                    <div class="invalid-feedback d-block">
-                                        {{ $message }}
-                                    </div>
-                                @enderror
+                            </ul>
+                            <div class="small mt-2">দ্রষ্টব্য: নিরাপত্তার কারণে ফাইলগুলো আবার নির্বাচন করতে হবে।</div>
+                        </div>
+                    @endif
+                    @if (session('error'))
+                        <div class="alert alert-warning" role="alert">{{ session('error') }}</div>
+                    @endif
+
+                    {{-- 1. Route (area) & category --}}
+                    <section class="app-card mb-4">
+                        <div class="card-head">
+                            <div class="icon-chip"><svg class="ic">
+                                    <use href="#i-pin" />
+                                </svg></div>
+                            <div>
+                                <h3>রুট ও ক্যাটাগরি নির্বাচন</h3><span class="en-sub">Route &amp; Category</span>
                             </div>
                         </div>
-
-                        <div class="mb-3 align-items-center">
-                            <label class=" col-form-label fw-bold">
-                                ক্যাটাগরি <span class="text-danger">*</span>
-                            </label>
-                            <div class="ms-5">
-                                @foreach($categories as $category)
-                                <div class="form-check form-check ">
-                                    <input 
-                                        type="radio"
-                                        class="form-check-input @error('category_id') is-invalid @enderror"
-                                        name="category_id"
-                                        value="{{ $category->id }}"
-                                        id="category{{ $category->id }}"
-                                        {{ old('category_id') == $category->id ? 'checked' : '' }}
-                                    >
-                                    <label class="form-check-label" for="category{{ $category->id }}">
-                                        {{ $category->category_name }}
-                                    </label>
+                        <div class="card-pad">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <div class="form-label">রুট<span class="req">*</span></div>
+                                    <div class="row g-3">
+                                        @foreach ($areas as $area)
+                                            <div class="col-12 col-lg-6">
+                                                <div class="position-relative h-100">
+                                                    <input class="route-input" type="radio" name="area_id"
+                                                        id="area{{ $area->id }}" value="{{ $area->id }}" {{ old('area_id') == $area->id ? 'checked' : '' }} required>
+                                                    <label class="route-card" for="area{{ $area->id }}">
+                                                        <span class="route-badge">{{ $loop->iteration }}</span>
+                                                        <span>
+                                                            <p class="route-title">{{ $area->area_name }}</p>
+                                                        </span>
+                                                        <svg class="ic check">
+                                                            <use href="#i-check-circle" />
+                                                        </svg>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                    <div class="text-danger small mt-2 d-none" id="routeError"><svg class="ic me-1">
+                                            <use href="#i-alert" />
+                                        </svg>অনুগ্রহ করে একটি রুট নির্বাচন করুন।</div>
+                                    @error('area_id')
+                                    <div class="text-danger small mt-2">{{ $message }}</div> @enderror
                                 </div>
-                                @endforeach
-                                @error('category_id')
-                                    <div class="invalid-feedback d-block">
-                                        {{ $message }}
-                                    </div>
-                                @enderror
-                            </div>
-                        </div>
 
-                        
-                    </div>
-                    <div class="border p-4 rounded shadow-sm mb-2">
-                        <h5 class="fw-bold mb-4">ব্যক্তিগত তথ্য (Personal Information)</h5>
-                        <div class="mb-3 align-items-center">
-                            <label class="col-form-label fw-bold">
-                                আবেদনকারীর নাম <span class="text-danger">*</span>
-                            </label>
-                            <div class="ms-5">
-                                <input type="text" name="applicant_name" class="form-control form-control-lg @error('applicant_name') is-invalid @enderror" placeholder="" value="{{ old('applicant_name') }}">
-                                @error('applicant_name')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class=" mb-3 align-items-center">
-                            <label class="col-form-label fw-bold">
-                                পিতা/স্বামীর নাম<span class="text-danger">*</span>
-                            </label>
-                            <div class="ms-5">
-                                <input type="text" name="guardian_name" class="form-control form-control-lg @error('guardian_name') is-invalid @enderror" placeholder="" value="{{ old('guardian_name') }}">
-                                @error('guardian_name')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="mb-4 align-items-center">
-                            <label class="col-form-label fw-bold">
-                                বর্তমান ঠিকানা <span class="text-danger">*</span>
-                            </label>
-                            <div class="ms-5">
-                                <input type="text" name="present_address" class="form-control form-control-lg @error('present_address') is-invalid @enderror" placeholder="" value="{{ old('present_address') }}">
-                                @error('present_address')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
-                                @enderror
-                            </div>
-                        </div>
-                        <div class="mb-3 align-items-center">
-                            <label class="col-form-label fw-bold">
-                                স্থায়ী ঠিকানা <span class="text-danger">*</span>
-                            </label>
-                            <div class="ms-5">
-                                <input type="text" name="permanent_address" class="form-control form-control-lg @error('permanent_address') is-invalid @enderror"  placeholder="" value="{{ old('permanent_address') }}">
-                                @error('permanent_address')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
-                                @enderror
-                            </div>
-                        </div>
-                        <div class="mb-3 align-items-center">
-                            <label class="col-form-label fw-bold">
-                                এন আইডি/জন্মনিবন্ধন নং <span class="text-danger">*</span>
-                            </label>
-                            <div class="ms-5">
-                                <input type="text" name="nid_no" class="form-control form-control-lg @error('nid_no') is-invalid @enderror" placeholder="" value="{{ old('nid_no') }}">
-                                @error('nid_no')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
-                                @enderror
-                            </div>
-                        </div>
-                        <div class="mb-3 align-items-center">
-                            <label class="col-form-label fw-bold">
-                                ইমেইল
-                            </label>
-                            <div class="ms-5">
-                                <input type="email" name="email" class="form-control form-control-lg" placeholder="" value="{{ old('email') }}">
-                            </div>
-                        </div>
-                        <div class="mb-3 align-items-center">
-                            <label class="col-form-label fw-bold">
-                                মোবাইল<span class="text-danger">*</span>
-                            </label>
-                            <div class="ms-5">
-                                <input type="text" name="phone" class="form-control form-control-lg @error('phone') is-invalid @enderror " placeholder="" value="{{ old('phone') }}">
-                                @error('phone')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
-                    <div class="border p-4 rounded shadow-sm mb-2">
-                        <h5 class="fw-bold mb-4">পে অর্ডারের বিবরণ (Pay Order Information)</h5>
-                        <div class="mb-3 align-items-center">
-                            <label class="col-form-label fw-bold">
-                                ব্যাংকের নাম<span class="text-danger">*</span>
-                            </label>
-                            <div class="ms-5">
-                                <input type="text" name="bank_name" class="form-control form-control-lg @error('bank_name') is-invalid @enderror" placeholder="" value="{{ old('bank_name') }}">
-                                @error('bank_name')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class=" mb-3 align-items-center">
-                            <label class="col-form-label fw-bold">
-                                পে অর্ডার নং<span class="text-danger">*</span>
-                            </label>
-                            <div class="ms-5">
-                                <input type="text" name="pay_order_no" class="form-control form-control-lg @error('pay_order_no') is-invalid @enderror" placeholder="" value="{{ old('pay_order_no') }}">
-                                @error('pay_order_no')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="mb-4 align-items-center">
-                            <label class="col-form-label fw-bold">
-                                পরিমান<span class="text-danger">*</span>
-                            </label>
-                            <div class="ms-5">
-                                <input type="text" name="amount" class="form-control form-control-lg @error('amount') is-invalid @enderror" placeholder="" value="{{ $app_setting->yearly_fee ?? '' }}" readonly>
-                                @error('amount')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
-                                @enderror
-                            </div>
-                        </div>
-                        <div class="mb-3 align-items-center">
-                            <label class="col-form-label fw-bold">
-                                পরিশোধের তারিখ<span class="text-danger">*</span>
-                            </label>
-                            <div class="ms-5">
-                                <input type="text" name="order_date" class="form-control form-control-lg @error('order_date') is-invalid @enderror" id="order_date" placeholder="" value="{{ old('order_date') }}" readonly>
-                                @error('order_date')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
-                    <div class="border p-4 rounded shadow-sm mb-2">
-                        <h5 class="fw-bold mb-4">প্রয়োজনীয় ডকুমেন্ট সংযুক্তকরণ</h5>
-                        <div class="mb-3 align-items-center">
-                            <label class="col-form-label fw-bold">
-                                আবেদনকারীর ছবি <span class="text-danger">*</span>
-                            </label>
-                            <div class="ms-5">
-                                <input type="file" name="applicant_image" class="form-control form-control-lg @error('applicant_image') is-invalid @enderror" placeholder=""  id="applicant_image"> 
-                                @error('applicant_image')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
-                                @enderror
-                                <div class="my-2" id="applicant_preview_box" style="display:none;">
-                                    <img src="" id="applicant_image_preview" alt="Applicant Image" width="200" style="display: none;">
-                                    <iframe id="applicant_pdf_preview" style="width:100%; height:300px; display:none;"></iframe>
+                                <div class="col-12 col-md-6">
+                                    <label for="category" class="form-label">ক্যাটাগরি<span class="req">*</span></label>
+                                    <select id="category" name="category_id" class="form-select" required>
+                                        <option value="" disabled {{ old('category_id') ? '' : 'selected' }}>--
+                                            ক্যাটাগরি নির্বাচন করুন --</option>
+                                        @foreach ($categories as $category)
+                                            <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>{{ $category->category_name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <div class="invalid-feedback">ক্যাটাগরি নির্বাচন করুন।</div>
+                                    @error('category_id')
+                                    <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                                 </div>
                             </div>
                         </div>
+                    </section>
 
-                        <!-- <div class=" mb-3 align-items-center">
-                            <label class="col-form-label fw-bold">
-                                স্বাক্ষর
-                            </label>
-                            <div class="ms-5">
-                                <input type="file" name="signature_image" class="form-control form-control-lg" placeholder="">
+                    {{-- 2. Personal information (name/address fields: Bangla only, enforced by the controller regex)
+                    --}}
+                    <section class="app-card mb-4">
+                        <div class="card-head">
+                            <div class="icon-chip"><svg class="ic">
+                                    <use href="#i-user" />
+                                </svg></div>
+                            <div>
+                                <h3>ব্যক্তিগত তথ্য</h3><span class="en-sub">Personal Information</span>
                             </div>
-                        </div> -->
-
-                        <div class=" mb-3 align-items-center">
-                            <label class="col-form-label fw-bold">
-                                 নাগরিকত্ব সনদ/বাসা ভাড়ার চুক্তিপত্র/বাড়ীর মালিকের প্রত্যয়ন/গ্যাস, পানি বা বিদ্যুৎ বিল কপি<span class="text-danger">*</span>
-                            </label>
-                            <div class="ms-5">
-                                <input type="file" name="citizen_certificate_image" class="form-control form-control-lg @error('citizen_certificate_image') is-invalid @enderror" placeholder="" id="citizen_certificate_image">
-                                @error('citizen_certificate_image')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
+                        </div>
+                        <div class="card-pad">
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <label for="aName" class="form-label">আবেদনকারীর নাম<span
+                                            class="req">*</span></label>
+                                    <input type="text" class="form-control" id="aName" name="applicant_name"
+                                        value="{{ old('applicant_name') }}" maxlength="255"
+                                        placeholder="আপনার পূর্ণ নাম বাংলায় লিখুন" required>
+                                    <div class="invalid-feedback">নাম আবশ্যক (শুধুমাত্র বাংলা অক্ষর)।</div>
+                                    @error('applicant_name')
+                                    <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label for="fName" class="form-label">পিতা/স্বামীর নাম<span
+                                            class="req">*</span></label>
+                                    <input type="text" class="form-control" id="fName" name="guardian_name"
+                                        value="{{ old('guardian_name') }}" maxlength="255"
+                                        placeholder="পিতা বা স্বামীর নাম বাংলায় লিখুন" required>
+                                    <div class="invalid-feedback">পিতা/স্বামীর নাম আবশ্যক (শুধুমাত্র বাংলা অক্ষর)।</div>
+                                    @error('guardian_name')
+                                    <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label for="presentAddr" class="form-label">বর্তমান ঠিকানা<span
+                                            class="req">*</span></label>
+                                    <textarea class="form-control" id="presentAddr" name="present_address" rows="2"
+                                        maxlength="255" placeholder="বাসা/হোল্ডিং, এলাকা, থানা"
+                                        required>{{ old('present_address') }}</textarea>
+                                    <div class="invalid-feedback">বর্তমান ঠিকানা আবশ্যক (শুধুমাত্র বাংলা অক্ষর)।</div>
+                                    @error('present_address')
+                                    <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label for="permAddr" class="form-label">স্থায়ী ঠিকানা<span
+                                            class="req">*</span></label>
+                                    <textarea class="form-control" id="permAddr" name="permanent_address" rows="2"
+                                        maxlength="255" placeholder="গ্রাম/মহল্লা, ডাকঘর, উপজেলা, জেলা"
+                                        required>{{ old('permanent_address') }}</textarea>
+                                    <div class="invalid-feedback">স্থায়ী ঠিকানা আবশ্যক (শুধুমাত্র বাংলা অক্ষর)।</div>
+                                    @error('permanent_address')
+                                    <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label for="nid" class="form-label">এনআইডি/জন্মনিবন্ধন নং<span
+                                            class="req">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><svg class="ic">
+                                                <use href="#i-card" />
+                                            </svg></span>
+                                        <input type="text" class="form-control en" id="nid" name="nid_no"
+                                            value="{{ old('nid_no') }}" maxlength="50" inputmode="numeric"
+                                            placeholder="10 / 13 / 17 digit" required>
                                     </div>
-                                @enderror
-                                <div class="my-2" id="citizen_preview_box" style="display:none;">
-                                    <img src="" id="citizen_image_preview" alt="Citizen Image" width="200" style="display:none;">
-                                    <iframe id="citizen_pdf_preview" style="width:100%; height:300px; display:none;"></iframe>
+                                    @error('nid_no')
+                                    <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label for="mobile" class="form-label">মোবাইল<span class="req">*</span></label>
+                                    <div class="input-group has-validation">
+                                        <span class="input-group-text"><svg class="ic">
+                                                <use href="#i-phone" />
+                                            </svg></span>
+                                        {{-- English or Bangla digits, 10-11 long (the controller converts Bangla digits
+                                        with Helper::bn2en) --}}
+                                        <input type="tel" class="form-control en" id="mobile" name="phone"
+                                            value="{{ old('phone') }}" maxlength="11" inputmode="numeric"
+                                            placeholder="01XXXXXXXXX" pattern="[0-9০-৯]{10,11}" required>
+                                        <div class="invalid-feedback">মোবাইল নম্বর ১০ বা ১১ ডিজিটের হতে হবে।</div>
+                                    </div>
+                                    @error('phone')
+                                    <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label for="email" class="form-label">ইমেইল <span
+                                            class="text-muted small fw-normal">(ঐচ্ছিক)</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><svg class="ic">
+                                                <use href="#i-mail" />
+                                            </svg></span>
+                                        <input type="email" class="form-control en" id="email" name="email"
+                                            value="{{ old('email') }}" maxlength="255" placeholder="name@example.com">
+                                    </div>
+                                    @error('email')
+                                    <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                                 </div>
                             </div>
                         </div>
+                    </section>
 
-                        <div class=" mb-3 align-items-center">
-                            <label class="col-form-label fw-bold">
-                                ক্যাটাগরি প্রমানক<span class="text-danger">*</span>
-                            </label>
-                            <div class="ms-5">
-                                <input type="file" name="category_proof_image" class="form-control form-control-lg @error('category_proof_image') is-invalid @enderror" placeholder="" id="category_proof_image">
-                                @error('category_proof_image')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
-                                @enderror
-                                <div class="my-2" id="category_preview_box" style="display:none;">
-                                    <img src="" id="category_image_preview" alt="Citizen Image" width="200" style="display:none;">
-                                    <iframe id="category_pdf_preview" style="width:100%; height:300px; display:none;"></iframe>
+                    {{-- 3. Documents (max 10 MB each, jpg/jpeg/png/pdf) --}}
+                    <section class="app-card mb-4">
+                        <div class="card-head">
+                            <div class="icon-chip"><svg class="ic">
+                                    <use href="#i-upload" />
+                                </svg></div>
+                            <div>
+                                <h3>প্রয়োজনীয় ডকুমেন্ট সংযুক্তকরণ</h3><span class="en-sub">Document Uploads</span>
+                            </div>
+                        </div>
+                        <div class="card-pad">
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <label class="upload-box"><input type="file" name="applicant_image"
+                                            accept=".jpg,.jpeg,.png,.pdf" data-upload required>
+                                        <svg class="ic u-icon">
+                                            <use href="#i-camera" />
+                                        </svg><span class="u-label">আবেদনকারীর ছবি<span class="req">*</span></span><span
+                                            class="u-hint">JPG / PNG / PDF • সর্বোচ্চ 10MB</span><span
+                                            class="u-file"></span></label>
+                                    @error('applicant_image')
+                                    <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="upload-box"><input type="file" name="citizen_certificate_image"
+                                            accept=".jpg,.jpeg,.png,.pdf" data-upload required>
+                                        <svg class="ic u-icon">
+                                            <use href="#i-receipt" />
+                                        </svg><span class="u-label">নাগরিকত্ব সনদ / ইউটিলিটি বিল কপি<span
+                                                class="req">*</span></span><span class="u-hint">নাগরিক সনদ/বাসা ভাড়ার
+                                            চুক্তিপত্র/বাড়ীর মালিকের প্রত্যয়ন/গ্যাস, পানি বা বিদ্যুৎ বিল • সর্বোচ্চ
+                                            10MB</span><span class="u-file"></span></label>
+                                    @error('citizen_certificate_image')
+                                    <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="upload-box"><input type="file" name="category_proof_image"
+                                            accept=".jpg,.jpeg,.png,.pdf" data-upload required>
+                                        <svg class="ic u-icon">
+                                            <use href="#i-badge" />
+                                        </svg><span class="u-label">ক্যাটাগরি প্রমানক<span
+                                                class="req">*</span></span><span class="u-hint">JPG / PNG / PDF •
+                                            সর্বোচ্চ 10MB</span><span class="u-file"></span></label>
+                                    @error('category_proof_image')
+                                    <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="upload-box"><input type="file" name="nid_image"
+                                            accept=".jpg,.jpeg,.png,.pdf" data-upload required>
+                                        <svg class="ic u-icon">
+                                            <use href="#i-card" />
+                                        </svg><span class="u-label">এনআইডি<span class="req">*</span></span><span
+                                            class="u-hint">সামনে ও পেছনের পাতা • সর্বোচ্চ 10MB</span><span
+                                            class="u-file"></span></label>
+                                    @error('nid_image')
+                                    <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                                 </div>
                             </div>
                         </div>
+                    </section>
 
-                        <div class="mb-4 align-items-center">
-                            <label class="col-form-label fw-bold">
-                                এন আই ডি <span class="text-danger">*</span>
-                            </label>
-                            <div class="ms-5">
-                                <input type="file" name="nid_image" class="form-control form-control-lg @error('nid_image') is-invalid @enderror" placeholder="" id="nid_image">
-                                @error('nid_image')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
-                                @enderror
-                                <div class="my-2" id="nid_preview_box" style="display:none;">
-                                    <img src="" id="nid_image_preview" alt="Citizen Image" width="200" style="display:none;">
-                                    <iframe id="nid_pdf_preview" style="width:100%; height:300px; display:none;"></iframe>
-                                </div>
+                    {{-- 4. Application fee (payment starts after the form is stored: JanataPayService::startPayment)
+                    --}}
+                    <section class="app-card mb-4">
+                        <div class="card-head">
+                            <div class="icon-chip gold"><svg class="ic">
+                                    <use href="#i-wallet" />
+                                </svg></div>
+                            <div>
+                                <h3>আবেদন ফি প্রদান</h3><span class="en-sub">Application Fee Payment</span>
                             </div>
                         </div>
-                        <div class="mb-3 align-items-center">
-                            <label class="col-form-label fw-bold">
-                                পে অর্ডারের ছবি<span class="text-danger">*</span>
-                            </label>
-                            <div class="ms-5">
-                                <input type="file" name="py_order_image" class="form-control form-control-lg @error('py_order_image') is-invalid @enderror" placeholder="" id="py_order_image">
-                                @error('py_order_image')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
+                        <div class="card-pad">
+                            <div class="fee-summary">
+                                <div class="row align-items-center g-3">
+                                    <div class="col-12 col-md-7">
+                                        <p class="mb-1 text-muted fw-semibold">আবেদন ফি (এককালীন, অফেরতযোগ্য)</p>
+                                        <div class="fee-amount">{{ $app_setting->application_fee ?? 200 }}<small
+                                                class="fs-4">/- টাকা</small></div>
+                                        <p class="secure-note mt-2 mb-0"><svg class="ic text-success me-1">
+                                                <use href="#i-shield" />
+                                            </svg>জমা দেওয়ার পর আপনাকে নিরাপদ পেমেন্ট গেটওয়েতে নিয়ে যাওয়া হবে</p>
                                     </div>
-                                @enderror
-                                <div class="my-2" id="pay_order_preview_box" style="display:none;">
-                                    <img src="" id="pay_order_image_preview" alt="Pay Order Image" style="width:200px; display:none;">
-                                    <iframe id="pay_order_pdf_preview" style="width:100%; height:300px; display:none;"></iframe>
+                                    <div class="col-12 col-md-5 text-md-end">
+                                        <button type="submit" class="btn btn-gold btn-lg-cta w-100"
+                                            id="applySubmitBtn"><svg class="ic">
+                                                <use href="#i-lock" />
+                                            </svg><span>Submit &amp; Pay via Payment Gateway</span></button>
+                                    </div>
                                 </div>
                             </div>
+                            {{-- No "name" on purpose: this checkbox is only checked in the browser, it is not sent to
+                            the controller --}}
+                            <div class="form-check mt-3">
+                                <input class="form-check-input" type="checkbox" id="declare" required>
+                                <label class="form-check-label" for="declare">আমি ঘোষণা করছি যে উপরোক্ত তথ্যসমূহ সত্য ও
+                                    নির্ভুল।</label>
+                            </div>
                         </div>
-                    </div>
-                    <!-- Submit Button -->
-                    <div class="text-center mt-3">
-                        <button type="submit" class="btn btn-success btn-lg px-5">জমা দিন</button>
-                        <button type="button" class="btn btn-secondary btn-lg px-5" id="close_application">ফিরে যান</button>
+                    </section>
+
+                    <div class="text-center">
+                        <a href="{{ route('home') }}" class="btn btn-outline-green"><svg class="ic">
+                                <use href="#i-arrow-left" />
+                            </svg>ফিরে যান</a>
                     </div>
                 </form>
             </div>
-        </div>
-    </div>
-    <div class="text-center mb-4" id="application_status">
-        <button id="showStatusBtn" class="btn btn-info btn-lg">আবেদনের অবস্থা</button>
-    </div>
-    <div class="card shadow border-0 rounded-4 mb-5" 
-     id="searchCard" 
-     style="background:white; display:none;">
-        <div class="card-body">
-            <h4 class="text-center mb-3">আবেদনের অবস্থা অনুসন্ধান করুন</h4>
+@endsection
 
-            <div id="searchError" class="alert alert-danger d-none"></div>
+@push('scripts')
+<script>
+(function () {
+'use strict';
+            // ---- 2. File upload name preview ----
+            document.querySelectorAll('input[data-upload]').forEach(function (input) {
+                var box = input.closest('.upload-box');
+                var icon = box.querySelector('.u-icon use');
+                var original = icon.getAttribute('href');
+                input.addEventListener('change', function () {
+                    var label = box.querySelector('.u-file');
+                    if (input.files && input.files.length) {
+                        label.textContent = input.files[0].name;
+                        box.classList.add('has-file');
+                        icon.setAttribute('href', '#i-check-circle');
+                    } else {
+                        label.textContent = '';
+                        box.classList.remove('has-file');
+                        icon.setAttribute('href', original);
+                    }
+                });
+            });
 
-            <form id="searchForm">
-                <div class="mb-3">
-                    <label class="fw-bold">এন আই ডি নং</label>
-                    <input type="text" class="form-control form-control-lg" id="nid_search">
-                </div>
+            // ---- 3. Application form (real submit) ----
+            var applyForm  = document.getElementById('applyForm');
+            var routeError = document.getElementById('routeError');
+            var submitBtn  = document.getElementById('applySubmitBtn');
 
-                <div class="mb-3">
-                    <label class="fw-bold">মোবাইল</label>
-                    <input type="text" class="form-control form-control-lg" id="phone_search">
-                </div>
+            // The controller rejects any Latin letters in these four fields (regex), so check it client-side too
+            ['applicant_name','guardian_name','present_address','permanent_address'].forEach(function (name) {
+            var el = applyForm.elements[name];
+            var check = function () {
+                el.setCustomValidity(/[A-Za-z]/.test(el.value) ? 'শুধুমাত্র বাংলা অক্ষর ও সংখ্যা লিখুন।' : '');
+            };
+            el.addEventListener('input', check);
+            check();
+            });
 
-                <button type="submit" class="btn btn-primary btn-lg mx-auto">
-                    <span class="spinner-border spinner-border-sm d-none" id="searchLoader"></span>
-                    <span id="searchBtnText">অনুসন্ধান করুন</span>
-                </button>
-                <button type="button" class="btn btn-secondary btn-lg px-5" id="close_status_form">ফিরে যান</button>
-                
-            </form>
+            applyForm.addEventListener('submit', function (e) {
+            var areaChosen = applyForm.querySelector('input[name="area_id"]:checked');
+            routeError.classList.toggle('d-none', !!areaChosen);
+            applyForm.classList.add('was-validated');
 
-            <hr>
-
-            <!-- Where result will show -->
-            <div id="searchResult"></div>
-        </div>
-    </div>
-
-
-    <script>
-       
-        // close application form
-        document.getElementById('close_application').addEventListener('click', function(){
-            document.getElementById('applicantFormCard').style.display = 'none';
-            // show application status button
-            document.getElementById('application_status').style.display = 'block';
-        })
-        // show status search form
-        document.getElementById('showStatusBtn').addEventListener('click', function() {
-            // hide application button
-            document.getElementById('showFormBtnContainer').style.display = 'none';
-            // show status search form
-            document.getElementById('searchCard').style.display = 'block';
-            window.scrollTo({ top: document.getElementById('searchCard').offsetTop - 20, behavior: 'smooth' });
-        });
-        // close status form
-        document.getElementById('close_status_form').addEventListener('click', function(){
-            // hide search status form
-            document.getElementById('searchCard').style.display = 'none';
-            // show application button
-            document.getElementById('showFormBtnContainer').style.display = 'block';
-        })
-
-        document.addEventListener('click', function(e) {
-            if (e.target && e.target.id === 'close_search_card') {
-                document.getElementById('searchResult').innerHTML = '';
-                document.getElementById('searchCard').style.display = 'none';
-                document.getElementById('showFormBtnContainer').style.display = 'block';
-            }
-        });
-
-        document.getElementById('searchForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            let nid = document.querySelector("#nid_search").value;
-            let phone = document.querySelector("#phone_search").value;
-
-            if (!nid && !phone) {
-                alert("NID বা মোবাইল নম্বর দিন");
+            if (!areaChosen || !applyForm.checkValidity()) {
+                e.preventDefault();                       // stop only when invalid
+                var firstInvalid = applyForm.querySelector(':invalid');
+                if (firstInvalid && areaChosen) firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return;
             }
-            // show loader
-            document.getElementById('searchLoader').classList.remove('d-none');
-            fetch("{{ route('applicant.search') }}", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": "{{ csrf_token() }}"
-                },
-                body: JSON.stringify({
-                    nid: nid,
-                    phone: phone
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                // hide loader
-                document.getElementById('searchLoader').classList.add('d-none');
-                if (data.error) {
-                    document.getElementById('searchError').innerHTML = data.error;
-                    document.getElementById('searchError').classList.remove('d-none');
-                    document.getElementById('searchResult').innerHTML = "";
-                } else {
-                    document.getElementById('searchError').classList.add('d-none');
-                    document.getElementById('searchResult').innerHTML = data.html;
-                }
-                window.scrollTo({ top: document.getElementById('searchResult').offsetTop + 470, behavior: 'smooth' });
+            // Valid: let the browser submit normally. Lock the button so a double click can't send it twice.
+            submitBtn.disabled = true;
+            submitBtn.querySelector('span').textContent = 'অপেক্ষা করুন...';
             });
-        });
-        // document.getElementById("printBtn").addEventListener("click", function() {
-        //     let nid = document.querySelector("#nid_search").value;
-        //     let phone = document.querySelector("#phone_search").value;
 
-        //     if (!nid && !phone) {
-        //         alert("NID বা মোবাইল নম্বর দিন");
-        //         return;
-        //     }
+            applyForm.querySelectorAll('input[name="area_id"]').forEach(function (r) {
+            r.addEventListener('change', function () { routeError.classList.add('d-none'); });
+            });
 
-        //     let url = `{{ route('applicant.print') }}?nid=${nid}&phone=${phone}`;
-
-        //     window.open(url, "_blank");
-        // });
-        $('#order_date').datepicker({
-            format: 'dd-mm-yyyy',
-            todayHighlight: true,
-            autoclose: true
-        });
-
-        // image preview
-        document.getElementById('applicant_image').addEventListener('change', function(e) {
-            const [file] = e.target.files;
-            if (file) {
-                document.getElementById('applicant_preview_box').style.display = 'block';
-                if (file.type.startsWith("image/")) {
-                    document.getElementById('applicant_image_preview').style.display = "block";
-                    document.getElementById('applicant_pdf_preview').style.display = "none";
-                    document.getElementById('applicant_image_preview').src = URL.createObjectURL(file);
-                }else if (file.type === "application/pdf") {
-                    document.getElementById('applicant_image_preview').style.display = "none";
-                    document.getElementById('applicant_pdf_preview').style.display = "block";
-                    document.getElementById('applicant_pdf_preview').src = URL.createObjectURL(file);
-                }
+            // If the user presses Back from the payment page, unlock the button again
+            window.addEventListener('pageshow', function (ev) {
+            if (ev.persisted) {
+                submitBtn.disabled = false;
+                submitBtn.querySelector('span').textContent = 'Submit & Pay via Payment Gateway';
             }
-        });
-        document.getElementById('citizen_certificate_image').addEventListener('change', function(e) {
-            const [file] = e.target.files;
-            if (file) {
-                document.getElementById('citizen_preview_box').style.display = 'block';
-                if (file.type.startsWith("image/")) {
-                    document.getElementById('citizen_image_preview').style.display = "block";
-                    document.getElementById('citizen_pdf_preview').style.display = "none";
-                    document.getElementById('citizen_image_preview').src = URL.createObjectURL(file);
-                }else if (file.type === "application/pdf") {
-                    document.getElementById('citizen_image_preview').style.display = "none";
-                    document.getElementById('citizen_pdf_preview').style.display = "block";
-                    document.getElementById('citizen_pdf_preview').src = URL.createObjectURL(file);
-                }
-            }
-        });
-        document.getElementById('category_proof_image').addEventListener('change', function(e) {
-            const [file] = e.target.files;
-            if (file) {
-                document.getElementById('category_preview_box').style.display = 'block';
-                if (file.type.startsWith("image/")) {
-                    document.getElementById('category_image_preview').style.display = "block";
-                    document.getElementById('category_pdf_preview').style.display = "none";
-                    document.getElementById('category_image_preview').src = URL.createObjectURL(file);
-                }else if (file.type === "application/pdf") {
-                    document.getElementById('category_image_preview').style.display = "none";
-                    document.getElementById('category_pdf_preview').style.display = "block";
-                    document.getElementById('category_pdf_preview').src = URL.createObjectURL(file);
-                }
-            }
-        });
-        document.getElementById('nid_image').addEventListener('change', function(e) {
-            const [file] = e.target.files;
-            if (file) {
-                document.getElementById('nid_preview_box').style.display = 'block';
-                if (file.type.startsWith("image/")) {
-                    document.getElementById('nid_image_preview').style.display = "block";
-                    document.getElementById('nid_pdf_preview').style.display = "none";
-                    document.getElementById('nid_image_preview').src = URL.createObjectURL(file);
-                }else if (file.type === "application/pdf") {
-                    document.getElementById('nid_image_preview').style.display = "none";
-                    document.getElementById('nid_pdf_preview').style.display = "block";
-                    document.getElementById('nid_pdf_preview').src = URL.createObjectURL(file);
-                }
-            }
-        });
-        document.getElementById('py_order_image').addEventListener('change', function(e) {
-            const [file] = e.target.files;
-            if (file) {
-                document.getElementById('pay_order_preview_box').style.display = 'block';
-                if (file.type.startsWith("image/")) {
-                    document.getElementById('pay_order_image_preview').style.display = "block";
-                    document.getElementById('pay_order_pdf_preview').style.display = "none";
-                    document.getElementById('pay_order_image_preview').src = URL.createObjectURL(file);
-                }else if (file.type === "application/pdf") {
-                    document.getElementById('pay_order_image_preview').style.display = "none";
-                    document.getElementById('pay_order_pdf_preview').style.display = "block";
-                    document.getElementById('pay_order_pdf_preview').src = URL.createObjectURL(file);
-                }
-                
-            }
-        });
-    </script>
-    @if ($errors->any())
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            let firstError = document.querySelector('.is-invalid');
-
-            if (firstError) {
-                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        });
-    </script>
-    @endif
-    <script>
-        // show application form
-        document.getElementById('showFormBtn').addEventListener('click', function() {
-            
-             const formCard = document.getElementById('applicantFormCard');
-
-            if (formCard.style.display === 'none' || formCard.style.display === '') {
-                // Show the form
-                formCard.style.display = 'block';
-                window.scrollTo({
-                    top: formCard.offsetTop - 20,
-                    behavior: 'smooth'
-                });
-                // hide application status button
-                document.getElementById('application_status').style.display = 'none';
-                document.getElementById('searchCard').style.display = 'none';
-            } else {
-                // Hide the form
-                formCard.style.display = 'none';
-                this.textContent = 'আবেদন করুন'; // original button text
-                window.scrollTo({
-                    top: 0,
-                    behavior: 'smooth'
-                });
-                // show application status button
-                document.getElementById('application_status').style.display = 'block';
-            }
-        });
-    </script>
-@endsection
+            });
+})();
+</script>
+@endpush

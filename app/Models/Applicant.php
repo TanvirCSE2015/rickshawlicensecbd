@@ -122,8 +122,14 @@ class Applicant extends Model
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
+    // this method will be removed.
     public function payment(): HasOne
     {
         return $this->hasOne(Payment::class);
     }
+    public function paymentInfo(): HasOne
+    {
+        return $this->hasOne(PaymentInfo::class);
+    }
+    
 }

@@ -17,9 +17,16 @@ use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use App\Services\JanataPayService;
 use Throwable;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ApplicantController extends Controller
 {
+    public function home()   
+    { 
+        return view('applicant.home',   ['app_setting' => ApplicationSetting::first()]); 
+    }
+    
     public function create()
     {
         $areas = Area::select('id', 'area_name')->get();
@@ -27,14 +34,18 @@ class ApplicantController extends Controller
         $app_setting = ApplicationSetting::latest()->first();
         return view('applicant.apply', compact('areas', 'categories','app_setting'));
     }
-
+    public function status() 
+    { 
+        $areas = Area::select('id', 'area_name')->get();
+        $categories = Category::where('category_slug','N/A')->select('id', 'category_name')->get();
+        $app_setting = ApplicationSetting::latest()->first();
+        return view('applicant.status', ['areas' => $areas, 'categories' => $categories /* + $editCategories */]); 
+    }
     public function store(Request $request)
     {
         $request->merge([
-            'amount' => Helper::bn2en($request->amount),
             'nid_no' => Helper::bn2en($request->nid_no),
             'phone'  => Helper::bn2en($request->phone),
-            'pay_order_no'=> Helper::bn2en($request->pay_order_no),
         ]);
         $validated = $request->validate([
             'area_id'           => 'required|exists:areas,id',
@@ -61,18 +72,11 @@ class ApplicantController extends Controller
                             }),
                         ],
 
-            'bank_name'         => 'required|string|max:255|regex:/^(?!.*[A-Za-z]).*$/u',
-            'pay_order_no'      => 'required|string|max:255|unique:applicants,pay_order_no',
-            'amount'            => 'required|numeric',
-            'order_date'        => 'required|date',
-
             // File validation
             'applicant_image'   => 'required|file|mimes:jpg,jpeg,png,pdf|max:10240',
-            // 'signature_image'   => 'nullable|image|max:2048',
             'citizen_certificate_image'   => 'required|file|mimes:jpg,jpeg,png,pdf|max:10240',
             'category_proof_image'   => 'required|file|mimes:jpg,jpeg,png,pdf|max:10240',
             'nid_image'         => 'required|file|mimes:jpg,jpeg,png,pdf|max:10240',
-            'py_order_image'    => 'required|file|mimes:jpg,jpeg,png,pdf|max:10240',
         ],[
             // Custom messages
             // Area & Category
@@ -114,23 +118,6 @@ class ApplicantController extends Controller
             'phone.unique'    => 'এই মোবাইল নম্বর দিয়ে ইতোমধ্যে আবেদন করা হয়েছে।',
             'phone.digits_between' => 'মোবাইল নম্বর অবশ্যই ১০ থেকে ১১ ডিজিটের হতে হবে।',
 
-            'bank_name.required' => 'ব্যাংকের নাম প্রদান করুন।',
-            'bank_name.string'   => 'ব্যাংকের নাম অবশ্যই সঠিক টেক্সট হতে হবে।',
-            'bank_name.max'      => 'ব্যাংকের নাম সর্বোচ্চ ২৫৫ অক্ষর হতে পারে।',
-            'bank_name.regex' => 'শুধুমাত্র বাংলা অক্ষর ও বাংলা সংখ্যা (০-৯) লিখতে পারবেন।',
-            
-            
-            'pay_order_no.required' => 'পে অর্ডার নম্বর প্রদান করুন।',
-            'pay_order_no.unique' => 'এই অর্ডার নম্বর দিয়ে ইতোমধ্যে আবেদন করা হয়েছে।',
-            'pay_order_no.string'   => 'পে অর্ডার নম্বর অবশ্যই সঠিক টেক্সট হতে হবে।',
-            'pay_order_no.max'      => 'পে অর্ডার নম্বর সর্বোচ্চ ২৫৫ অক্ষর হতে পারে।',
-
-            'amount.required' => 'টাকার পরিমাণ প্রদান করুন।',
-            'amount.numeric'  => 'টাকার পরিমাণ অবশ্যই সংখ্যায় হতে হবে।',
-
-            'order_date.required' => 'অর্ডারের তারিখ নির্বাচন করুন।',
-            'order_date.date'     => 'অর্ডারের তারিখটি সঠিক ফরম্যাটে দিন।',
-
             'applicant_image.required' => 'আবেদনকারীর ছবি আপলোড করুন।',
             'applicant_image.mimes'    => 'আবেদনকারীর ছবি অবশ্যই JPG, JPEG, PNG অথবা PDF হতে হবে।',
 
@@ -142,9 +129,6 @@ class ApplicantController extends Controller
 
             'nid_image.required' => 'NID এর ছবি আপলোড করুন।',
             'nid_image.mimes'    => 'NID ছবি অবশ্যই JPG, JPEG, PNG বা PDF হতে হবে।',
-
-            'py_order_image.required' => 'পে অর্ডারের ছবি আপলোড করুন।',
-            'py_order_image.mimes'    => 'পে অর্ডারের ছবি অবশ্যই JPG, JPEG, PNG অথবা PDF হতে হবে।',
         ]);
 
         // Convert date fields
@@ -209,50 +193,99 @@ class ApplicantController extends Controller
                 'applicant_id' => $applicant->id,
                 'error' => $e->getMessage(),
             ]);
+            // Remove the application and its uploaded files
+            $this->discardApplicant($applicant);
+
             return redirect()->back()
-            ->with('error', 'আপনার আবেদন সংরক্ষণ হয়েছে, কিন্তু পেমেন্ট শুরু করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।')
-            ->with('applicant_id', $applicant->id);
+                ->withInput($request->except([
+                    'applicant_image', 'citizen_certificate_image', 'category_proof_image', 'nid_image',
+                ]))
+                ->with('error', 'পেমেন্ট শুরু করা যায়নি, তাই আপনার আবেদনটি সংরক্ষণ করা হয়নি। অনুগ্রহ করে আবার আবেদন করুন।');
         }
-
-        return redirect()->back()->with('success', 'আপনার আবেদন সফলভাবে জমা হয়েছে!')->with('nid', $applicant->nid_no)
-        ->with('phone', $applicant->phone)
-        ->with('id', $applicant->id);
     }
+    private function discardApplicant(Applicant $applicant): void
+    {
+        $fileFields = ['applicant_image', 'signature_image', 'nid_image', 'citizen_certificate_image', 'category_proof_image'];
 
+        try {
+            DB::transaction(function () use ($applicant, $fileFields) {
+                // collect file paths before deleting the row
+                $paths = collect($fileFields)->map(fn ($f) => $applicant->{$f})->filter()->all();
+
+                // payment rows that startPayment() may have created before it failed
+                if ($applicant->paymentInfo) {
+                    $applicant->paymentInfo->applicationFee?->delete();
+                    $applicant->paymentInfo->delete();
+                }
+
+                $applicant->delete();   // use forceDelete() if Applicant uses SoftDeletes
+
+                // delete files only after the DB delete has succeeded
+                DB::afterCommit(function () use ($paths) {
+                    foreach ($paths as $path) {
+                        Storage::disk('public')->delete($path);
+                    }
+                });
+            });
+        } catch (Throwable $e) {
+            Log::error('Failed to discard applicant after payment failure', [
+                'applicant_id' => $applicant->id,
+                'error'        => $e->getMessage(),
+            ]);
+        }
+    }
     public function search(Request $request)
     {
-        // Validate: at least one must be present
-        $request->validate([
-            'nid'   => 'nullable',
-            'phone' => 'nullable',
-        ]);
+        // Accept English or Bangla digits, ignore spaces/dashes
+        $term = preg_replace('/\D+/', '', Helper::bn2en((string) $request->search));
 
-        if (!$request->nid && !$request->phone) {
-            return response()->json([
-                'error' => 'NID অথবা মোবাইল নম্বর অন্তত একটি দিতে হবে'
-            ]);
+        if ($term === '') {
+            return response()->json(['error' => 'NID অথবা মোবাইল নম্বর দিতে হবে']);
         }
 
-        $settings=ApplicationSetting::latest()->first();
+        // phone may be stored as 01712345678 or 1712345678 (rule: digits_between:10,11)
+        $phones = [$term];
+        if (strlen($term) === 10) $phones[] = '0' . $term;
+        if (strlen($term) === 11 && str_starts_with($term, '0')) $phones[] = substr($term, 1);
 
-        $applicant = Applicant::when($request->nid, function ($query) use ($request) {
-                                    return $query->where('nid_no', $request->nid);
-                                })
-                            ->when($request->phone, function ($query) use ($request) {
-                                    return $query->where('phone', $request->phone);
-                                })
-                            ->latest()
-                            ->first();
+        $settings = ApplicationSetting::latest()->first();
 
+        $applicant = Applicant::with([
+                        'paymentInfo',
+                        'paymentInfo.applicationFee',
+                        'paymentInfo.yearlyFee',
+                        'paymentInfo.securityFee',
+                        'paymentInfo.refunds',
+                        'area',
+                        'category',
+                    ])
+                    ->where('applicant_year', date('Y'))
+                    ->where(function ($q) use ($term, $phones) {
+                        $q->where('nid_no', $term)->orWhereIn('phone', $phones);
+                    })
+                    ->latest()
+                    ->first();
         if (!$applicant) {
-            return response()->json([
-                'error' => 'কোনো তথ্য পাওয়া যায়নি'
-            ]);
+            return response()->json(['error' => 'কোনো তথ্য পাওয়া যায়নি']);
         }
-        $html = view('applicant.search', compact('applicant','settings'))->render();
+        // --- Payment status flags ---
+        $paymentInfo = $applicant->paymentInfo;
 
+        $applicationFeePaid = $paymentInfo?->applicationFee?->status === 'paid';
+        $yearlyFeePaid      = $paymentInfo?->yearlyFee?->status === 'paid';
+        $securityFeePaid    = $paymentInfo?->securityFee?->status === 'paid';
+        $yearlyFeePartial   = $paymentInfo?->yearlyFee?->status === 'partial';
+
+        $html = view('applicant.search', compact('applicant',
+        'settings',
+        'paymentInfo',
+        'applicationFeePaid',
+        'yearlyFeePaid',
+        'securityFeePaid',
+        'yearlyFeePartial'))->render();
         return response()->json(['html' => $html]);
     }
+    
 
     public function print(Request $request)
     {
@@ -346,18 +379,11 @@ class ApplicantController extends Controller
                     ->where(fn ($query) => $query->where('applicant_year', $applicant->applicant_year)),
             ],
 
-            'bank_name'    => 'required|string|max:255|regex:/^(?!.*[A-Za-z]).*$/u',
-            'pay_order_no' => 'required|string|max:255',
-            'amount'       => 'required|numeric',
-            'order_date'   => 'required|date',
-
             // Images → optional during update
             'applicant_image'          => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
-            // 'signature_image'          => 'nullable|image|max:10240',
             'citizen_certificate_image'=> 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
             'category_proof_image'     => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
             'nid_image'                => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
-            'py_order_image'           => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240',
         ],[
             // Custom messages
             // Area & Category
@@ -399,21 +425,6 @@ class ApplicantController extends Controller
             'phone.unique'    => 'এই মোবাইল নম্বর দিয়ে ইতোমধ্যে আবেদন করা হয়েছে।',
             'phone.digits_between' => 'মোবাইল নম্বর অবশ্যই ১০ থেকে ১১ ডিজিটের হতে হবে।',
 
-            'bank_name.required' => 'ব্যাংকের নাম প্রদান করুন।',
-            'bank_name.string'   => 'ব্যাংকের নাম অবশ্যই সঠিক টেক্সট হতে হবে।',
-            'bank_name.max'      => 'ব্যাংকের নাম সর্বোচ্চ ২৫৫ অক্ষর হতে পারে।',
-            'bank_name.regex' => 'শুধুমাত্র বাংলা অক্ষর ও বাংলা সংখ্যা (০-৯) লিখতে পারবেন।',
-
-            'pay_order_no.required' => 'পে অর্ডার নম্বর প্রদান করুন।',
-            'pay_order_no.string'   => 'পে অর্ডার নম্বর অবশ্যই সঠিক টেক্সট হতে হবে।',
-            'pay_order_no.max'      => 'পে অর্ডার নম্বর সর্বোচ্চ ২৫৫ অক্ষর হতে পারে।',
-
-            'amount.required' => 'টাকার পরিমাণ প্রদান করুন।',
-            'amount.numeric'  => 'টাকার পরিমাণ অবশ্যই সংখ্যায় হতে হবে।',
-
-            'order_date.required' => 'অর্ডারের তারিখ নির্বাচন করুন।',
-            'order_date.date'     => 'অর্ডারের তারিখটি সঠিক ফরম্যাটে দিন।',
-
             'applicant_image.required' => 'আবেদনকারীর ছবি আপলোড করুন।',
             'applicant_image.mimes'    => 'আবেদনকারীর ছবি অবশ্যই JPG, JPEG, PNG অথবা PDF হতে হবে।',
 
@@ -425,9 +436,6 @@ class ApplicantController extends Controller
 
             'nid_image.required' => 'NID এর ছবি আপলোড করুন।',
             'nid_image.mimes'    => 'NID ছবি অবশ্যই JPG, JPEG, PNG বা PDF হতে হবে।',
-
-            'py_order_image.required' => 'পে অর্ডারের ছবি আপলোড করুন।',
-            'py_order_image.mimes'    => 'পে অর্ডারের ছবি অবশ্যই JPG, JPEG, PNG অথবা PDF হতে হবে।',
         ]);
 
         // Convert date format if needed
@@ -440,7 +448,6 @@ class ApplicantController extends Controller
             'applicant_image' => 'applicant',
             'signature_image' => 'signature',
             'nid_image'       => 'nid',
-            'py_order_image'  => 'pay_order',
             'citizen_certificate_image' => 'citizen_certificate',
             'category_proof_image' => 'category_proof',
         ] as $field => $folder) {
@@ -458,11 +465,72 @@ class ApplicantController extends Controller
         }
         
         $applicant->update($validated);
-        return redirect()->route('home')->with('success', 'আপনার আবেদন সফলভাবে সম্পাদন হয়েছে!')
-        ->with('nid', $applicant->nid_no)
-        ->with('phone', $applicant->phone)
-        ->with('id', $applicant->id);
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'আপনার আবেদন সফলভাবে সম্পাদন হয়েছে!',
+                'nid_no'  => $applicant->nid_no,        // used to refresh the search result
+            ]);
+        }
     }
+    public function payYearlyFee(Request $request,Applicant $applicant)
+    {
+        // NEW: only approved applications can pay (adjust to your rule)
+        if ($applicant->status !== 'approved') {
+            return $this->fail($request, 'আপনার আবেদনটি এখনো অনুমোদিত হয়নি।');
+        }
 
+        // NEW: block a second payment
+        if ($applicant->paymentInfo?->yearlyFee?->status === 'paid') {
+            return $this->fail($request, 'বার্ষিক ফি ইতোমধ্যে পরিশোধ করা হয়েছে।');
+        }
+        // Load the latest application settings.
+        $settings = ApplicationSetting::latest()->first();
+
+        if (!$settings) {
+            return $this->fail($request, 'পেমেন্ট সেটিংস পাওয়া যায়নি।');
+        }
+
+        // Calculate payment amount on the server.
+        $yearlyFee = (float) ($settings->yearly_fee ?? 0);
+        $securityFee = (float) ($settings->security_fee ?? 0);
+        $taxPercent = (float) ($settings->tax_percent ?? 0);
+
+        $subtotal = $yearlyFee + $securityFee;
+        $vatAmount = ($subtotal * $taxPercent) / 100;
+        $totalAmount = round($subtotal + $vatAmount, 2);
+
+        if ($totalAmount <= 0) {
+            return $this->fail($request, 'পেমেন্টের পরিমাণ সঠিক নয়।');
+        }
+
+        try {
+            $paymentUrl = app(JanataPayService::class)->startPayment(
+                applicantId: $applicant->id,
+                paymentType: 'yearly_fee',
+                amount: (int) round($totalAmount),
+                createdBy: null
+            );
+
+            return $request->expectsJson()
+            ? response()->json(['redirect' => $paymentUrl])    // JavaScript sends the browser to JanataPay
+            : redirect()->away($paymentUrl); 
+
+        } catch (Throwable $e) {
+
+            Log::error('JanataPay yearly fee payment initiation failed', [
+                'applicant_id' => $applicant->id,
+                'amount' => $totalAmount,
+                'error' => $e->getMessage(),
+            ]);
+
+           return $this->fail($request, 'পেমেন্ট শুরু করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।', 500);
+        }
+    }
+    private function fail(Request $request, string $message, int $status = 422)
+    {
+        return $request->expectsJson()
+            ? response()->json(['message' => $message], $status)
+            : back()->with('error', $message);
+    }
 
 }

@@ -6,7 +6,10 @@ use App\Http\Controllers\PrintReportController;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\JanataPayController;
 
-Route::get('/', [ApplicantController::class, 'create'])->name('home');
+Route::get('/',        [ApplicantController::class, 'home'])->name('home');
+Route::get('/apply',   [ApplicantController::class, 'create'])->name('applicant.create');
+Route::get('/status',  [ApplicantController::class, 'status'])->name('applicant.status');
+// Route::get('/', [ApplicantController::class, 'create'])->name('home');
 Route::post('/apply', [ApplicantController::class, 'store'])->name('applicant.store');
 Route::post('/applicant/search', [ApplicantController::class, 'search'])->name('applicant.search');
 Route::get('/applicant/{id}/details', [ApplicantController::class, 'viewDetails'])
@@ -16,6 +19,10 @@ Route::get('/applicant/{id}/edit', [ApplicantController::class, 'edit'])
 Route::put('/applicant/{applicant}', [ApplicantController::class, 'update'])
     ->name('applicant.update');
 Route::get('/application/print', [ApplicantController::class, 'print'])->name('applicant.print');
+Route::post('/applicant/{applicant}/yearly-fee/payment', [
+    ApplicantController::class,
+    'payYearlyFee'
+])->name('applicant.yearly-fee.payment');
 
 
 //Receipt Routes
@@ -38,8 +45,10 @@ Route::get('/tokens', function(){
     return view('receipt.tokens_print');
 });
 
-Route::get(
-    '/payments/janatapay/callback',
-    [JanataPayController::class, 'callback']
-)->name('janatapay.callback');
+// Route::get(
+//     '/payments/success',
+//     [JanataPayController::class, 'callback']
+// )->name('janatapay.callback');
+Route::get('/payment/callback', [JanataPayController::class, 'callback'])->name('janatapay.callback'); 
+Route::get('/payment-result', [JanataPayController::class, 'result'])->name('payment.result');
 

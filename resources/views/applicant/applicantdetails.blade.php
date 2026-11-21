@@ -1,5 +1,5 @@
-@extends('layouts.frontend')
-@section('main_content')
+@extends('layouts.app')
+@section('content')
 @php
     function en2bn($number)
     {

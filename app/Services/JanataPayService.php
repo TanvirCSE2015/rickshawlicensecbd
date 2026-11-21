@@ -210,7 +210,7 @@ class JanataPayService
         array $payload,
         string $aesKey
     ): array {
-        $aesKey = base64_decode($aesKeyBase64, true);
+        $aesKey = base64_decode($aesKey, true);
         $encryptedData = $this->aesEncrypt(
             json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES),
             $aesKey
@@ -374,6 +374,7 @@ class JanataPayService
             return [
                 'status' => 'success',
                 'payment_info_id' => $attempt->payment_info_id,
+                'applicant_id' => $attempt->applicant_id
             ];
         }
 
@@ -449,6 +450,7 @@ class JanataPayService
                 'status' => $status,
                 'gateway_status_code' => $gatewayStatusCode,
                 'amount_matches' => $amountMatches,
+                'applicant_id' => $attempt->applicant_id
             ];
         }
 
@@ -468,22 +470,26 @@ class JanataPayService
                 return [
                     'status' => 'success',
                     'payment_info_id' => $current->payment_info_id,
+                    'applicant_id' => $attempt->applicant_id
                 ];
             }
 
             $now = now();
-
-            // Create the common payment record.
-            $paymentInfoId = DB::table('payment_infos')->insertGetId([
-                'applicant_id' => $attempt->applicant_id,
-                'invoice_no' => $attempt->reference_id,
-                'total_paid' => $attempt->amount,
-                'payment_date' => $now->toDateString(),
-                'created_by' => null,
-                'updated_by' => null,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
+            if ($attempt->payment_type === 'application_fee') {
+                // Create the common payment record.
+                $paymentInfoId = DB::table('payment_infos')->insertGetId([
+                    'applicant_id' => $attempt->applicant_id,
+                    'invoice_no' => $attempt->reference_id,
+                    'total_paid' => $attempt->amount,
+                    'payment_date' => $now->toDateString(),
+                    'created_by' => null,
+                    'updated_by' => null,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }else{
+                $paymentInfoId = $current->payment_info_id;
+            }
 
             $common = [
                 'payment_info_id' => $paymentInfoId,
@@ -504,14 +510,40 @@ class JanataPayService
             }
 
             if ($attempt->payment_type === 'yearly_fee') {
-                DB::table('yearly_fees')->insert(array_merge($common, [
-                    'paid_amount' => $attempt->amount,
+                $setting = DB::table('application_settings')->first();
+                DB::table('yearly_fees')->insert([
+                    'paid_amount' => $setting->yearly_fee,
                     'fee_date' => $now->toDateString(),
                     'due_date' => null,
                     'status' => 'paid',
                     'gateway_transaction_id' => $ftNumber,
                     'created_by' => null,
-                ]));
+                    'payment_info_id' => $paymentInfoId,
+                    'amount' => $setting->yearly_fee,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+                DB::table('security_fees')->insert([
+                    'refundable_amount' => $setting->security_fee_refund,
+                    'fee_date' => $now->toDateString(),
+                    'status' => 'paid',
+                    'gateway_transaction_id' => $ftNumber,
+                    'created_by' => null,
+                    'payment_info_id' => $paymentInfoId,
+                    'amount' => $setting->security_fee,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+                $tax_amount = (($setting->yearly_fee + $setting->security_fee) * $setting->tax_percent)/100;
+                $payment_info = DB::table('payment_infos')->where('id', $paymentInfoId)->first();
+                DB::table('payment_infos')
+                ->where('id', $attempt->payment_info_id)
+                ->update([
+                    'total_paid' => $payment_info->total_paid + $attempt->amount,
+                    'tax' => $tax_amount,
+                    'payment_date' => $now->toDateString(),
+                    'updated_at' => now(),
+                ]);
             }
 
             if ($attempt->payment_type === 'security_fee') {
@@ -539,6 +571,7 @@ class JanataPayService
             return [
                 'status' => 'success',
                 'payment_info_id' => $paymentInfoId,
+                'applicant_id' => $attempt->applicant_id
             ];
         });
     }
